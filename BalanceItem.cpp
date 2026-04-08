@@ -17,7 +17,7 @@ const wchar_t* CBalanceItem::GetItemId() const
 
 const wchar_t* CBalanceItem::GetItemLableText() const
 {
-    return L"余额";
+    return L"";
 }
 
 const wchar_t* CBalanceItem::GetItemValueText() const
