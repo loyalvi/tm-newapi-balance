@@ -29,5 +29,5 @@ const wchar_t* CBalanceItem::GetItemValueText() const
 
 const wchar_t* CBalanceItem::GetItemValueSampleText() const
 {
-    return L"已用999.99\n999.99";
+    return L"$999.99\n$999.99";
 }
