@@ -218,6 +218,10 @@ std::string CNewApiPlugin::HttpGet(const std::wstring& url, const std::wstring& 
     std::wstring authHeader = L"Authorization: " + token;
     WinHttpAddRequestHeaders(hRequest, authHeader.c_str(), (DWORD)-1, WINHTTP_ADDREQ_FLAG_ADD);
 
+    // 添加 New-Api-User 头（系统令牌调用 /api/user/self 时必须提供）
+    std::wstring userIdHeader = L"New-Api-User: " + std::to_wstring(m_config.user_id);
+    WinHttpAddRequestHeaders(hRequest, userIdHeader.c_str(), (DWORD)-1, WINHTTP_ADDREQ_FLAG_ADD);
+
     if (WinHttpSendRequest(hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0,
         WINHTTP_NO_REQUEST_DATA, 0, 0, 0) &&
         WinHttpReceiveResponse(hRequest, NULL))

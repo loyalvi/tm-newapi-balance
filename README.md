@@ -153,6 +153,7 @@ PollInterval=60
 ```
 GET {BaseUrl}/api/user/self
 Authorization: {AccessToken}
+New-Api-User: {UserID}
 ```
 
 响应示例（简化）：
@@ -214,10 +215,11 @@ A: 请确认 DLL 已复制到 `plugins` 目录，且 TrafficMonitor 版本 ≥ 1
 ```powershell
 $baseUrl     = "https://your-newapi-domain.com"
 $accessToken = "your-access-token-here"
+$userId      = 1
 
 $response = Invoke-RestMethod `
     -Uri "$baseUrl/api/user/self" `
-    -Headers @{ Authorization = $accessToken } `
+    -Headers @{ Authorization = $accessToken; "New-Api-User" = $userId } `
     -Method GET
 
 $response | ConvertTo-Json -Depth 5
