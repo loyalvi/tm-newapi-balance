@@ -59,6 +59,17 @@ void CNewApiPlugin::FetchBalance()
         return;
     }
 
+    if (m_config.debug_log)
+        WriteDebugLog(response);
+
+    // 检查 API 是否返回 success:true
+    if (!ExtractJsonBool(response, "success"))
+    {
+        std::lock_guard<std::mutex> lock(m_data_mutex);
+        m_balance_text = L"认证失败";
+        return;
+    }
+
     // 解析 JSON 中的 quota、used_quota、username、display_name
     // New API 返回: {"success":true,"message":"","data":{...,"quota":12345,...}}
     // 先尝试从 "data" 对象中获取
@@ -146,6 +157,7 @@ void CNewApiPlugin::LoadConfig()
 
     m_config.user_id = GetPrivateProfileIntW(L"General", L"UserID", 1, config_path.c_str());
     m_config.poll_interval_sec = GetPrivateProfileIntW(L"General", L"PollInterval", 60, config_path.c_str());
+    m_config.debug_log = GetPrivateProfileIntW(L"General", L"DebugLog", 0, config_path.c_str()) != 0;
 
     if (m_config.poll_interval_sec < 5)
         m_config.poll_interval_sec = 5;
@@ -210,15 +222,26 @@ std::string CNewApiPlugin::HttpGet(const std::wstring& url, const std::wstring& 
         WINHTTP_NO_REQUEST_DATA, 0, 0, 0) &&
         WinHttpReceiveResponse(hRequest, NULL))
     {
-        DWORD bytesAvailable = 0;
-        while (WinHttpQueryDataAvailable(hRequest, &bytesAvailable) && bytesAvailable > 0)
+        // 检查 HTTP 状态码，非 2xx 视为失败
+        DWORD statusCode = 0;
+        DWORD statusCodeSize = sizeof(statusCode);
+        WinHttpQueryHeaders(hRequest,
+            WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+            WINHTTP_HEADER_NAME_BY_INDEX,
+            &statusCode, &statusCodeSize, WINHTTP_NO_HEADER_INDEX);
+
+        if (statusCode >= 200 && statusCode < 300)
         {
-            std::string buf(bytesAvailable, '\0');
-            DWORD bytesRead = 0;
-            if (WinHttpReadData(hRequest, &buf[0], bytesAvailable, &bytesRead))
+            DWORD bytesAvailable = 0;
+            while (WinHttpQueryDataAvailable(hRequest, &bytesAvailable) && bytesAvailable > 0)
             {
-                buf.resize(bytesRead);
-                result += buf;
+                std::string buf(bytesAvailable, '\0');
+                DWORD bytesRead = 0;
+                if (WinHttpReadData(hRequest, &buf[0], bytesAvailable, &bytesRead))
+                {
+                    buf.resize(bytesRead);
+                    result += buf;
+                }
             }
         }
     }
@@ -307,4 +330,41 @@ std::wstring CNewApiPlugin::ExtractJsonString(const std::string& json, const std
     std::wstring wstr(wlen, L'\0');
     MultiByteToWideChar(CP_UTF8, 0, value.c_str(), (int)value.size(), &wstr[0], wlen);
     return wstr;
+}
+
+// ============================================================
+// 检查布尔字段（如 "success":true）
+// ============================================================
+bool CNewApiPlugin::ExtractJsonBool(const std::string& json, const std::string& key)
+{
+    std::string pattern = "\"" + key + "\"";
+    size_t pos = json.find(pattern);
+    if (pos == std::string::npos)
+        return false;
+
+    pos += pattern.length();
+
+    // 跳过空白和冒号
+    while (pos < json.size() && (json[pos] == ' ' || json[pos] == '\t' || json[pos] == ':'))
+        pos++;
+
+    // 匹配 true
+    return json.compare(pos, 4, "true") == 0;
+}
+
+// ============================================================
+// 调试日志：将原始 HTTP 响应写入 plugins 目录下的 .log 文件
+// ============================================================
+void CNewApiPlugin::WriteDebugLog(const std::string& content)
+{
+    if (m_config_dir.empty())
+        return;
+
+    std::wstring log_path = m_config_dir + L"tm-newapi-balance.log";
+    std::ofstream ofs(log_path, std::ios::app);
+    if (!ofs.is_open())
+        return;
+
+    // 写入时间戳（tick 计数，足够用于区分请求）
+    ofs << "[tick=" << GetTickCount() << "]\n" << content << "\n\n";
 }
