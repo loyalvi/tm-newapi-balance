@@ -29,6 +29,7 @@ public:
         std::wstring access_token;
         int user_id = 1;
         int poll_interval_sec = 60;  // HTTP 请求间隔（秒）
+        bool debug_log = false;      // 是否写调试日志
     };
 
     const Config& GetConfig() const { return m_config; }
@@ -41,9 +42,12 @@ public:
 private:
     void LoadConfig();
     void FetchBalance();
+    // 返回 HTTP 响应体；若请求失败或 HTTP 状态非 2xx 则返回空字符串
     std::string HttpGet(const std::wstring& url, const std::wstring& token);
     std::wstring ExtractJsonString(const std::string& json, const std::string& key);
     double ExtractJsonNumber(const std::string& json, const std::string& key);
+    bool ExtractJsonBool(const std::string& json, const std::string& key);
+    void WriteDebugLog(const std::string& content);
 
     CBalanceItem m_balance_item;
     Config m_config;

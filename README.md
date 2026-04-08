@@ -113,6 +113,7 @@ PollInterval=60
 | `AccessToken` | 系统访问令牌，用于调用 `/api/user/self` 接口 | 无（必填） |
 | `UserID` | 要查询的用户 ID，管理员默认为 1 | `1` |
 | `PollInterval` | 余额刷新间隔（秒），最小值为 5 秒 | `60` |
+| `DebugLog` | 设为 `1` 时将每次 HTTP 原始响应追加写入 `plugins/tm-newapi-balance.log`，排查完毕后改回 `0` | `0` |
 
 > **注意**：`AccessToken` 请妥善保管，不要提交到公开代码仓库。
 
@@ -178,13 +179,63 @@ Authorization: {AccessToken}
 A: 请检查 INI 文件中 `BaseUrl` 和 `AccessToken` 是否已正确填写。
 
 **Q: 任务栏显示"请求失败"**  
-A: 请检查：① `BaseUrl` 地址是否可访问；② `AccessToken` 是否有效；③ 网络是否正常。
+A: 请检查：① `BaseUrl` 地址是否可访问；② `AccessToken` 是否有效；③ 网络是否正常；④ HTTP 状态码是否为 2xx（可开启 `DebugLog=1` 查看原始响应）。
+
+**Q: 任务栏显示"认证失败"**  
+A: API 返回了 `"success":false`，通常是 `AccessToken` 无效或权限不足，请重新从 New API「个人设置 → 账户管理 → 安全设置 → 系统访问令牌」获取令牌。
 
 **Q: 余额长时间不刷新**  
 A: 默认 60 秒轮询一次。可在 INI 中调小 `PollInterval`，但最小值为 5 秒。
 
 **Q: 插件未在插件管理中出现**  
 A: 请确认 DLL 已复制到 `plugins` 目录，且 TrafficMonitor 版本 ≥ 1.82（支持插件系统的最低版本）。
+
+---
+
+## 诊断与测试
+
+### 方法一：启用调试日志
+
+1. 编辑 `plugins/tm-newapi-balance.ini`，将 `DebugLog` 设为 `1`：
+   ```ini
+   DebugLog=1
+   ```
+2. 重启 TrafficMonitor，等待首次轮询（约数秒）。
+3. 查看 `plugins/tm-newapi-balance.log`，其中记录了每次请求的原始 HTTP 响应体：
+   - 若日志中出现 `"success":false`，说明令牌无效或权限不足。
+   - 若日志为空，说明请求本身没有发出（检查 `BaseUrl` 格式）。
+   - 确认 `"quota"` 字段值是否为预期值。
+4. 排查完毕后将 `DebugLog` 改回 `0`。
+
+### 方法二：用 PowerShell 手动验证接口
+
+在 Windows PowerShell 中直接调用 New API 接口，确认令牌和地址是否正确：
+
+```powershell
+$baseUrl     = "https://your-newapi-domain.com"
+$accessToken = "your-access-token-here"
+
+$response = Invoke-RestMethod `
+    -Uri "$baseUrl/api/user/self" `
+    -Headers @{ Authorization = $accessToken } `
+    -Method GET
+
+$response | ConvertTo-Json -Depth 5
+```
+
+预期输出（成功时）：
+```json
+{
+  "success": true,
+  "data": {
+    "username": "admin",
+    "quota": 6170000,
+    "used_quota": 2830000
+  }
+}
+```
+
+若 `success` 为 `false`，说明令牌不正确；若命令报错，说明 `BaseUrl` 不可达。
 
 ---
 
