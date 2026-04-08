@@ -1,0 +1,7 @@
+{
+    "workbench.colorCustomizations": {
+        "statusBar.noFolderBackground": "#4D255E",
+        "statusBar.noFolderForeground": "#FCF9FD"
+    },
+    "iis.configDir": ""
+}
