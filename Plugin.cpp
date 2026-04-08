@@ -82,7 +82,7 @@ void CNewApiPlugin::FetchBalance()
     double used = used_quota / 500000.0;
 
     wchar_t buf[64];
-    swprintf_s(buf, L"$%.2f", balance);
+    swprintf_s(buf, L"$%.2f\n$%.2f", balance, used);
 
     wchar_t tip[256];
     swprintf_s(tip, L"NewAPI 余额\n用户: %s\n余额: $%.2f\n已用: $%.2f",
