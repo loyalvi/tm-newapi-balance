@@ -19,7 +19,7 @@ target_link_libraries(tm-newapi-balance PRIVATE winhttp)
 target_compile_definitions(tm-newapi-balance PRIVATE UNICODE _UNICODE)
 
 # 输出到 build/bin 方便复制
-set_target_properties(NewApiBalance PROPERTIES
+set_target_properties(tm-newapi-balance PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
