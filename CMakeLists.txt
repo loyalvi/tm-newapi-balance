@@ -10,6 +10,8 @@ add_library(tm-newapi-balance SHARED
     Plugin.cpp
     BalanceItem.h
     BalanceItem.cpp
+    UsedItem.h
+    UsedItem.cpp
     PluginInterface.h
 )
 

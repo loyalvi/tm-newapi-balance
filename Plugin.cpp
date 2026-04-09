@@ -13,6 +13,7 @@ CNewApiPlugin CNewApiPlugin::m_instance;
 CNewApiPlugin::CNewApiPlugin()
 {
     m_balance_text = L"--";
+    m_used_text = L"--";
 }
 
 CNewApiPlugin& CNewApiPlugin::Instance()
@@ -24,6 +25,8 @@ IPluginItem* CNewApiPlugin::GetItem(int index)
 {
     if (index == 0)
         return &m_balance_item;
+    if (index == 1)
+        return &m_used_item;
     return nullptr;
 }
 
@@ -46,6 +49,7 @@ void CNewApiPlugin::FetchBalance()
     {
         std::lock_guard<std::mutex> lock(m_data_mutex);
         m_balance_text = L"未配置";
+        m_used_text = L"未配置";
         return;
     }
 
@@ -56,6 +60,7 @@ void CNewApiPlugin::FetchBalance()
     {
         std::lock_guard<std::mutex> lock(m_data_mutex);
         m_balance_text = L"请求失败";
+        m_used_text = L"请求失败";
         return;
     }
 
@@ -67,6 +72,7 @@ void CNewApiPlugin::FetchBalance()
     {
         std::lock_guard<std::mutex> lock(m_data_mutex);
         m_balance_text = L"认证失败";
+        m_used_text = L"认证失败";
         return;
     }
 
@@ -81,8 +87,11 @@ void CNewApiPlugin::FetchBalance()
     double balance = quota / 500000.0;
     double used = used_quota / 500000.0;
 
-    wchar_t buf[64];
-    swprintf_s(buf, L"$%.2f\n$%.2f", balance, used);
+    wchar_t balanceBuf[32];
+    swprintf_s(balanceBuf, L"$%.2f", balance);
+
+    wchar_t usedBuf[32];
+    swprintf_s(usedBuf, L"$%.2f", used);
 
     wchar_t tip[256];
     swprintf_s(tip, L"NewAPI 余额\n用户: %s\n余额: $%.2f\n已用: $%.2f",
@@ -90,7 +99,8 @@ void CNewApiPlugin::FetchBalance()
         balance, used);
 
     std::lock_guard<std::mutex> lock(m_data_mutex);
-    m_balance_text = buf;
+    m_balance_text = balanceBuf;
+    m_used_text = usedBuf;
     m_tooltip_text = tip;
 }
 
