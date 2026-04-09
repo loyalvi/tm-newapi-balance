@@ -1,6 +1,7 @@
 #pragma once
 #include "PluginInterface.h"
 #include "BalanceItem.h"
+#include "UsedItem.h"
 #include <Windows.h>
 #include <string>
 #include <mutex>
@@ -36,6 +37,7 @@ public:
 
     // 数据
     std::wstring m_balance_text;     // 显示用的余额文本
+    std::wstring m_used_text;        // 显示用的已用文本
     std::wstring m_tooltip_text;     // 鼠标提示文本
     std::mutex m_data_mutex;
 
@@ -50,6 +52,7 @@ private:
     void WriteDebugLog(const std::string& content);
 
     CBalanceItem m_balance_item;
+    CUsedItem m_used_item;
     Config m_config;
     std::wstring m_config_dir;
     ITrafficMonitor* m_app = nullptr;
